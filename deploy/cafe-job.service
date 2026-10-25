@@ -1,0 +1,16 @@
+[Unit]
+Description=카페 매출 알리미 — 보고 시각이 된 매장에 어제 매출 보내기
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=cafesales
+WorkingDirectory=/opt/cafe-sales-alert
+ExecStart=/usr/bin/node --disable-warning=ExperimentalWarning --dns-result-order=ipv4first --no-network-family-autoselection src/job.js
+Environment=TZ=Asia/Seoul
+UMask=0077
+TimeoutStartSec=50min
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/opt/cafe-sales-alert/data

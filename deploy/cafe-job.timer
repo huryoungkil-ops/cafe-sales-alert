@@ -1,0 +1,10 @@
+[Unit]
+Description=카페 매출 알리미 — 1분마다 보낼 사람 확인
+
+[Timer]
+OnCalendar=*-*-* *:*:05
+AccuracySec=5s
+Persistent=false
+
+[Install]
+WantedBy=timers.target
