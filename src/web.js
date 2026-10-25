@@ -122,7 +122,7 @@ async function handle(req, res) {
     return send(res, 200, pages.reportPage(JSON.parse(r.data_json), u || {}, { mine: user && user.id === r.user_id }), { 'X-Robots-Tag': 'noindex' });
   }
   // 보고서 이미지 (카톡 카드·디스코드 첨부) — /img/<토큰>.png (전체) · /img/<토큰>-s.png (카톡용 정사각)
-  rm = p.match(/^\/img\/([\w-]{20,40})(-s)?\.png$/);
+  rm = p.match(/^\/img\/([\w-]{24})(-s)?\.png$/); // 보고서 토큰은 24자 (token(18))
   if ((M === 'GET' || M === 'HEAD') && rm) {
     const r = one('SELECT * FROM reports WHERE token=?', rm[1]);
     if (!r) { res.writeHead(404); return res.end(); }
