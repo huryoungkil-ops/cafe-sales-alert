@@ -201,4 +201,28 @@ function kakaoText(d) {
   ].filter(Boolean).join('\n').slice(0, 195);
 }
 
-module.exports = { buildDaily, buildMonthly, buildStats, buildAde, discordText, kakaoText, parseMd, kstDate, addDays, dayLabel, daysIn, prevMonth, change, fmt, dow, reportUrl, adeName, unit };
+// 이미지와 함께 보낼 짧은 글 (자세한 숫자는 그림 안에)
+function shortText(d, token) {
+  if (d.kind === 'monthly') {
+    const [y, m] = d.ym.split('-');
+    return `📅 **${d.store} ${y}년 ${Number(m)}월 결산** — 월 매출 **${fmt(d.money)}원**${d.prevMoney ? ` (지난달 대비 ${change(d.money, d.prevMoney)})` : ''}\n📊 자세히 보기: ${reportUrl(token)}`;
+  }
+  const lw = d.lastWeek ? ` (지난주 ${dow(d.lastWeek.date)}요일 대비 ${change(d.day.money, d.lastWeek.money)})` : '';
+  return `☕ **${d.store} 매출** — ${dayLabel(d.date)} · 어제 **${fmt(d.day.money)}원**${lw}\n📊 자세히 보기: ${reportUrl(token)}`;
+}
+
+// 카톡 이미지 카드의 제목·설명 (제목 2줄 · 설명 몇 줄만 보인다)
+function kakaoCard(d, token, sz) {
+  const top = d.stats.top5[0];
+  const image = { image_url: `${PUBLIC_BASE}/img/${token}-s.png`, image_width: sz.width, image_height: sz.height };
+  if (d.kind === 'monthly') {
+    return { title: `📅 ${d.store} ${Number(d.ym.slice(5))}월 결산 ${fmt(d.money)}원${d.prevMoney ? ' ' + change(d.money, d.prevMoney) : ''}`.slice(0, 80), description: [`하루 평균 ${fmt(d.avg)}원`, top ? `1위 ${top.name} ${fmt(top.count)}${unit(top.name)}` : ''].filter(Boolean).join(' · ').slice(0, 120), ...image };
+  }
+  return {
+    title: `☕ ${d.store} ${dayLabel(d.date)} 어제 ${fmt(d.day.money)}원${d.lastWeek ? ' ' + change(d.day.money, d.lastWeek.money) : ''}`.slice(0, 80),
+    description: [`이번달 ${fmt(d.month.money)}원${d.month.projected ? ` · 예상 ${fmt(d.month.projected)}원` : ''}`, top ? `1위 ${top.name} ${fmt(top.count)}${unit(top.name)}` : '', d.ade && d.ade.some((s) => !s.cups) ? '⚠️ 0잔 에이드 있음' : ''].filter(Boolean).join('\n').slice(0, 120),
+    ...image,
+  };
+}
+
+module.exports = { shortText, kakaoCard, buildDaily, buildMonthly, buildStats, buildAde, discordText, kakaoText, parseMd, kstDate, addDays, dayLabel, daysIn, prevMonth, change, fmt, dow, reportUrl, adeName, unit };

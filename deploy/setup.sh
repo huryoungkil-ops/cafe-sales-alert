@@ -19,10 +19,21 @@ PUBLIC_BASE=https://$FIRST
 SECRET_KEY=$(node -e "console.log(require('crypto').randomBytes(32).toString('base64'))")
 # 운영자 디스코드 (새 가입·이상 알림)
 OWNER_WEBHOOK=
-# 카카오 «나에게 보내기» — developers.kakao.com 앱의 REST API 키, 클라이언트 시크릿
-# Redirect URI 에 https://$FIRST/kakao/callback 등록, 동의항목 «카카오톡 메시지 전송(talk_message)» 사용
+# 카카오 로그인 + «나에게 보내기» — developers.kakao.com 앱의 REST API 키, 클라이언트 시크릿
+# Redirect URI 에 https://$FIRST/auth/kakao/callback · /kakao/callback 등록, 동의항목 «카카오톡 메시지 전송(talk_message)» 사용
 KAKAO_REST_KEY=
 KAKAO_CLIENT_SECRET=
+# 네이버·구글 로그인 — 콜백 https://$FIRST/auth/naver/callback · /auth/google/callback
+NAVER_CLIENT_ID=
+NAVER_CLIENT_SECRET=
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+# 이메일 가입 확인 메일 (Gmail 앱 비밀번호 등). 비워 두면 data/outbox/ 에 파일로만 남김
+SMTP_HOST=
+SMTP_PORT=465
+SMTP_USER=
+SMTP_PASS=
+MAIL_FROM=
 MAX_USERS=200
 ENV
   echo ".env 를 만들었다 — OWNER_WEBHOOK·카카오 키를 채울 것"
@@ -30,7 +41,7 @@ fi
 chmod 600 "$APP/.env"
 chown -R cafesales:cafesales "$APP" /var/backups/cafe-sales-alert
 
-sudo -u cafesales bash -c "cd $APP && node --disable-warning=ExperimentalWarning --test test/*.test.js" | grep -E '^ℹ (pass|fail)'
+sudo -u cafesales bash -c "cd $APP && npm ci --omit=dev --no-audit --no-fund >/dev/null && node --disable-warning=ExperimentalWarning --test test/*.test.js" | grep -E '^ℹ (pass|fail)'
 
 cp "$APP"/deploy/cafe-web.service "$APP"/deploy/cafe-job.service "$APP"/deploy/cafe-job.timer /etc/systemd/system/
 systemctl daemon-reload

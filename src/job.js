@@ -6,6 +6,7 @@ const { decrypt, token } = require('./secure');
 const { Euro } = require('./euro');
 const R = require('./report');
 const notify = require('./notify');
+const card = require('./card');
 
 const RETRY_MIN = 30;
 
@@ -31,7 +32,10 @@ async function makeReport(user, kind, ref, { send = true, euro } = {}) {
   if (data.store && data.store !== user.store_name) run('UPDATE users SET store_name=? WHERE id=?', data.store, user.id);
   let sent = [];
   if (send) {
-    sent = await notify.toUser(user, { discord: R.discordText(data, user, tok), kakao: R.kakaoText(data), link: R.reportUrl(tok) });
+    // 보고서는 이미지로 (사이트 보고서와 같은 디자인). 그림을 못 만들면 글로만 보낸다
+    let png = null, kakaoCard = null;
+    try { png = card.png(data, user, 'full'); kakaoCard = R.kakaoCard(data, tok, card.size(data, user, 'square')); } catch (e) { console.error('보고서 이미지 실패:', e.message); }
+    sent = await notify.toUser(user, { discord: R.discordText(data, user, tok), discordShort: R.shortText(data, tok), png, kakao: R.kakaoText(data), kakaoCard, link: R.reportUrl(tok) });
     run('UPDATE reports SET sent_json=? WHERE id=?', JSON.stringify(sent), id);
     log(user.id, `${kind} ${ref} 보냄: ${sent.map(([k, r]) => `${k} ${r.ok ? 'OK' : r.why}`).join(' · ') || '연결된 알림 없음'}`);
   }
@@ -77,11 +81,11 @@ async function runUser(user) {
     const first = !user.euro_err || (user.euro_err_at || '').slice(0, 10) !== now().slice(0, 10);
     run('UPDATE users SET euro_err=?, euro_err_at=? WHERE id=?', (auth ? 'AUTH:' : '') + e.message, now(), user.id);
     log(user.id, `실패: ${e.message}`);
-    console.error(user.login, e.message);
+    console.error(user.id, e.message);
     if (first) {
       const why = auth ? `유로 관리자 로그인이 안 됩니다 (${e.message}). 비밀번호를 바꾸셨다면 사이트에서 다시 저장해 주세요. 그때까지 조회를 멈춥니다.` : `오늘 매출을 가져오지 못했습니다 (${e.message}). ${RETRY_MIN}분 뒤 다시 시도합니다.`;
       await notify.toUser(user, { discord: `⚠️ 카페 매출 알리미 — ${why}`, kakao: `⚠️ 카페 매출 알리미\n${why}`.slice(0, 195), link: require('./env').PUBLIC_BASE + '/app' });
-      if (!auth) await notify.owner(`⚠️ 카페 매출 알리미 조회 실패 — ${user.login}: ${e.message}`);
+      if (!auth) await notify.owner(`⚠️ 카페 매출 알리미 조회 실패 — 회원 #${user.id}: ${e.message}`);
     }
   }
 }

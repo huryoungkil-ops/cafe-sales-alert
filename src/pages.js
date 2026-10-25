@@ -364,9 +364,9 @@ ${bye ? '<div class="bye">탈퇴가 끝났습니다. 계정·유로 비밀번호
   <div class="eyebrow">3 STEPS · 2 MINUTES</div>
   <h2>2분이면 내일 아침부터 받아요</h2>
   <div class="steps">
-    <div class="step"><h3>가입</h3><p>이 사이트에서 쓸 아이디와 비밀번호만 정하세요. 이메일·전화번호·실명은 받지 않아요.</p><span class="t">⏱ 10초</span></div>
+    <div class="step"><h3>3초 가입</h3><p>카카오 · 네이버 · 구글 계정으로 버튼 한 번. 이메일로도 가입할 수 있어요. 카카오로 가입하면 카톡 알림까지 한 번에 연결돼요.</p><span class="t">⏱ 3초</span></div>
     <div class="step"><h3>유로 관리자 계정 연결</h3><p>평소 매출 보던 유로 관리자 아이디·비밀번호를 넣으면 바로 로그인해 보고, 맞을 때만 <b>암호화해서</b> 저장해요. 어제 매출이 곧바로 화면에 떠요.</p><span class="t">⏱ 30초</span></div>
-    <div class="step"><h3>카톡 · 디스코드 연결</h3><p>«카카오톡 연결» 한 번 누르면 «나와의 채팅»으로 와요. 디스코드는 웹훅 주소만 붙여 넣기. 받을 시각도 직접 정해요 (입력하지 않으면 아침 7시).</p><span class="t">⏱ 1분</span></div>
+    <div class="step"><h3>카톡 · 디스코드 연결</h3><p>카톡 «나와의 채팅»으로 매출 카드 이미지가 와요. 디스코드는 웹훅 주소만 붙여 넣기. 받을 시각도 직접 정해요 (입력하지 않으면 아침 7시).</p><span class="t">⏱ 1분</span></div>
   </div>
 </section>
 
@@ -401,7 +401,7 @@ const enc = Buffer.concat([c.update(String(text), 'utf8'), c.final()]);</div>
 
 <div class="final reveal">
   <h2>내일 아침 7시,<br>어제 매출이 먼저 인사할게요 ☕</h2>
-  <p class="sub" style="margin:0 auto">가입 10초 · 연결 1분 · 이용료 0원</p>
+  <p class="sub" style="margin:0 auto">가입 3초 · 연결 1분 · 이용료 0원</p>
   <div class="cta" style="margin-top:26px"><a class="btn btn-main btn-lg" href="${go}">☕ ${goText}</a>${starBtn()}</div>
   ${stores >= 3 ? `<div class="stat"><div><b>${fmt(stores)}</b>매장 연결</div><div><b>${fmt(reports)}</b>번 보고 배달</div></div>` : ''}
 </div>
@@ -423,18 +423,96 @@ const FORM_CSS = `
 .small{font-size:13px;color:var(--dim);margin-top:16px;line-height:1.6}
 `;
 
-function loginPage({ error = '', login = '' } = {}) {
-  const body = `<div class="center"><form class="box" method="post" action="/login">
-<a class="logo" href="/" style="display:flex;align-items:center;gap:10px;color:var(--text);text-decoration:none;font-weight:900"><img src="${ICON_URI}" width="30" height="30" alt="">${NAME}</a>
+// 소셜 로그인 버튼 (카카오 → 네이버 → 구글), 뉴스모아와 같은 모양
+const SOCIAL_ICON = {
+  kakao: '<svg viewBox="0 0 24 24"><path fill="#000" d="M12 3C6.5 3 2 6.6 2 11c0 2.8 1.9 5.3 4.7 6.7l-1 3.6c-.1.3.3.6.6.4l4.2-2.8c.5.1 1 .1 1.5.1 5.5 0 10-3.6 10-8S17.5 3 12 3z"/></svg>',
+  naver: '<svg viewBox="0 0 24 24"><path fill="#fff" d="M16.3 12.8 7.4 0H0v24h7.7V11.2L16.6 24H24V0h-7.7z" transform="scale(.75) translate(4 4)"/></svg>',
+  google: '<svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>',
+};
+const SOCIAL_LABEL = { kakao: '카카오로 계속하기', naver: '네이버로 계속하기', google: 'Google로 계속하기' };
+const socialButtons = (providers) => providers.map((p) => `<a class="s-${p}" href="/auth/${p}">${SOCIAL_ICON[p]}${SOCIAL_LABEL[p]}</a>`).join('');
+const AUTH_CSS = `
+.social{display:flex;flex-direction:column;gap:10px;margin:20px 0 8px}
+.social a{display:flex;align-items:center;justify-content:center;gap:10px;height:50px;border-radius:14px;font-weight:800;text-decoration:none;border:1px solid transparent;font-size:15px}
+.social svg{width:20px;height:20px}
+.s-kakao{background:#FEE500;color:rgba(0,0,0,.85)}
+.s-naver{background:#03C75A;color:#fff}
+.s-google{background:#fff;color:#1f1f1f;border-color:#dadce0!important}
+.or{display:flex;align-items:center;gap:10px;color:var(--dim);font-size:13px;margin:18px 0 6px}
+.or:before,.or:after{content:'';flex:1;height:1px;background:var(--line)}
+.box form input{margin-top:8px}
+.ok-msg{margin-top:14px;padding:12px 14px;border-radius:12px;background:rgba(95,227,161,.08);border:1px solid rgba(95,227,161,.3);color:#c8f7dd;font-size:14px;line-height:1.5}
+.links{font-size:13.5px;color:var(--mute);margin-top:12px;text-align:center}
+.links a{color:var(--cara);text-decoration:none;font-weight:700}
+.pwrule{font-size:12.5px;color:var(--dim);margin:6px 0 0}
+`;
+const logoTop = `<a class="logo" href="/" style="display:flex;align-items:center;gap:10px;color:var(--text);text-decoration:none;font-weight:900"><img src="${ICON_URI}" width="30" height="30" alt="">${NAME}</a>`;
+const note = (msg, err = true) => (msg ? `<div class="${err ? 'err' : 'ok-msg'}">${esc(msg)}</div>` : '');
+
+function loginPage({ providers = [], msg = '', err = true } = {}) {
+  const body = `<div class="center"><div class="box">${logoTop}
 <h1>로그인 · 가입</h1>
-<p>처음이면 원하는 아이디와 비밀번호를 적으세요. 그대로 가입됩니다.</p>
-<label>아이디</label><input name="login" value="${esc(login)}" autocomplete="username" required maxlength="20" placeholder="예: my_cafe">
-<label>비밀번호 (4자 이상)</label><input name="pw" type="password" autocomplete="current-password" required minlength="4">
-${error ? `<div class="err">${error}</div>` : ''}
-<button class="btn btn-main">☕ 시작하기</button>
-<p class="small">이 사이트 전용 아이디예요. 유로 관리자 계정은 로그인 뒤에 따로 연결합니다. 이메일·전화번호는 받지 않아요.</p>
-</form></div>`;
-  return shell(`로그인 — ${NAME}`, body, { css: FORM_CSS, noindex: true });
+<p>쓰던 계정으로 3초 만에 시작하세요. 처음이면 그대로 가입돼요.</p>
+${note(msg, err)}
+<div class="social">${socialButtons(providers)}</div>
+<div class="or">또는 이메일로</div>
+<form method="post" action="/login/email">
+ <input type="email" name="email" required maxlength="120" autocomplete="email" placeholder="이메일">
+ <input type="password" name="password" required maxlength="100" autocomplete="current-password" placeholder="비밀번호">
+ <button class="btn btn-main">이메일로 로그인</button>
+</form>
+<p class="links"><a href="/signup">이메일로 회원가입</a> · <a href="/forgot">비밀번호를 잊었어요</a></p>
+<p class="small">소셜 계정의 비밀번호는 받지 않아요. 유로 관리자 계정은 로그인 뒤에 따로 연결하고, 암호화해서 저장합니다.</p>
+</div></div>`;
+  return shell(`로그인 — ${NAME}`, body, { css: FORM_CSS + AUTH_CSS, noindex: true });
+}
+
+function signupPage({ providers = [], msg = '' } = {}) {
+  const body = `<div class="center"><div class="box">${logoTop}
+<h1>회원가입</h1>
+<p>소셜 계정이 있다면 버튼 한 번이면 끝나요.</p>
+${note(msg)}
+<div class="social">${socialButtons(providers)}</div>
+<div class="or">또는 이메일로 가입</div>
+<form method="post" action="/signup">
+ <input type="email" name="email" required maxlength="120" autocomplete="email" placeholder="이메일">
+ <input type="password" name="password" required minlength="8" maxlength="100" autocomplete="new-password" placeholder="비밀번호">
+ <p class="pwrule">8자 이상, 영문·숫자·기호 중 두 가지 이상</p>
+ <button class="btn btn-main">확인 메일 받기</button>
+</form>
+<p class="small">확인 메일의 버튼을 눌러야 가입이 끝나요. 비밀번호는 되돌릴 수 없는 방식(scrypt)으로만 저장해요.</p>
+<p class="links">이미 가입했나요? <a href="/login">로그인</a></p>
+</div></div>`;
+  return shell(`회원가입 — ${NAME}`, body, { css: FORM_CSS + AUTH_CSS, noindex: true });
+}
+
+function forgotPage({ msg = '' } = {}) {
+  const body = `<div class="center"><div class="box">${logoTop}
+<h1>비밀번호 찾기</h1>
+<p>가입한 주소로 새 비밀번호를 정하는 링크를 보내 드려요. 소셜로 가입했어도 비밀번호를 정하면 이메일로 로그인할 수 있어요.</p>
+${note(msg)}
+<form method="post" action="/forgot">
+ <input type="email" name="email" required maxlength="120" autocomplete="email" placeholder="가입한 이메일">
+ <button class="btn btn-main">재설정 링크 받기</button>
+</form>
+<p class="links"><a href="/login">← 로그인으로</a></p>
+</div></div>`;
+  return shell(`비밀번호 찾기 — ${NAME}`, body, { css: FORM_CSS + AUTH_CSS, noindex: true });
+}
+
+function resetPage({ token: tok, email, msg = '' } = {}) {
+  const body = `<div class="center"><div class="box">${logoTop}
+<h1>새 비밀번호</h1>
+${note(msg)}
+<form method="post" action="/reset">
+ <input type="hidden" name="token" value="${esc(tok)}">
+ <input type="email" value="${esc(email)}" disabled>
+ <input type="password" name="password" required minlength="8" maxlength="100" autocomplete="new-password" placeholder="새 비밀번호">
+ <p class="pwrule">8자 이상, 영문·숫자·기호 중 두 가지 이상</p>
+ <button class="btn btn-main">저장하고 로그인</button>
+</form>
+</div></div>`;
+  return shell(`새 비밀번호 — ${NAME}`, body, { css: FORM_CSS + AUTH_CSS, noindex: true });
 }
 
 function messagePage(title, msg, href = '/') {
@@ -496,7 +574,7 @@ footer{margin-top:26px;text-align:center;color:var(--dim);font-size:13px;line-he
 @media (max-width:520px){.prog3 a{font-size:12px;padding:10px}}
 `;
 
-function appPage({ user, last, recent, flash, flashErr, kakaoReady }) {
+function appPage({ user, last, recent, flash, flashErr, kakaoReady, logins = '' }) {
   const hasEuro = !!user.euro_pw_enc;
   const hasNoti = !!(user.discord_url || user.kakao_refresh);
   const step = !hasEuro ? 1 : !hasNoti ? 2 : 3;
@@ -505,7 +583,7 @@ function appPage({ user, last, recent, flash, flashErr, kakaoReady }) {
   const lastData = last ? { ...last.data, recent: last.data.recent || recent } : null;
   const body = `<div class="app">
 <div class="top-nav"><a class="logo" href="/"><img src="${ICON_URI}" width="28" height="28" alt="">${NAME}</a>
-<div class="who">${esc(user.login)} 님 <form method="post" action="/logout" style="margin:0"><button class="btn btn-ghost btn-sm">로그아웃</button></form></div></div>
+<div class="who">${esc(user.name || (user.email || '').split('@')[0] || '사장님')} 님 <form method="post" action="/logout" style="margin:0"><button class="btn btn-ghost btn-sm">로그아웃</button></form></div></div>
 ${flash ? `<div class="flash${flashErr ? ' err' : ''}">${esc(flash)}</div>` : ''}
 <div class="prog3">
  <a href="#euro" class="${hasEuro ? 'done' : 'now'}"><b>${hasEuro ? '✅' : '①'} 유로 계정</b>${hasEuro ? '연결됨' : '연결하기'}</a>
@@ -562,17 +640,12 @@ ${lastData ? `<div style="margin-bottom:16px">${reportCard(lastData, user)}<div 
 
 <div class="card" id="account">
  <h2>계정</h2>
- <form method="post" action="/app/password">
-  <div class="g3" style="grid-template-columns:1fr 1fr auto;align-items:end">
-   <div><label>지금 비밀번호</label><input name="old" type="password" required autocomplete="current-password"></div>
-   <div><label>새 비밀번호</label><input name="new" type="password" required minlength="4" autocomplete="new-password"></div>
-   <button class="btn btn-ghost btn-sm" style="height:48px">바꾸기</button>
-  </div>
- </form>
+ <p class="d">로그인: <b>${esc(logins || '—')}</b>${user.email ? ` · ${esc(user.email)}` : ''}</p>
+ <p class="help">이메일 로그인 비밀번호를 정하거나 바꾸려면 <a href="/forgot">비밀번호 찾기</a>로 링크를 받아 주세요.</p>
  <details class="help" style="margin-top:18px"><summary>탈퇴하기</summary>
   <form method="post" action="/app/leave" onsubmit="return confirm('정말 탈퇴할까요? 계정·유로 비밀번호·매출 기록이 모두 즉시 지워집니다.')">
-   <p>계정, 암호화된 유로 비밀번호, 쌓인 매출 기록과 보고서를 모두 즉시 지웁니다.</p>
-   <div class="row"><input name="pw" type="password" placeholder="이 사이트 비밀번호" required style="max-width:240px"><button class="btn btn-red btn-sm">탈퇴</button></div>
+   <p>계정, 로그인 연결, 암호화된 유로 비밀번호, 쌓인 매출 기록과 보고서를 모두 즉시 지웁니다.</p>
+   <div class="row"><input name="confirm" placeholder="«탈퇴» 라고 적기" required style="max-width:240px"><button class="btn btn-red btn-sm">탈퇴</button></div>
   </form>
  </details>
 </div>
@@ -582,4 +655,4 @@ ${lastData ? `<div style="margin-bottom:16px">${reportCard(lastData, user)}<div 
   return shell(`내 매출 — ${NAME}`, body, { css: REPORT_CSS + APP_CSS, noindex: true });
 }
 
-module.exports = { NAME, ICON_SVG, esc, landing, loginPage, messagePage, reportPage, appPage, reportCard, SAMPLE };
+module.exports = { NAME, ICON_SVG, esc, landing, loginPage, signupPage, forgotPage, resetPage, messagePage, reportPage, appPage, reportCard, SAMPLE };

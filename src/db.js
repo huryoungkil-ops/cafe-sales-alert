@@ -9,12 +9,12 @@ const db = new DatabaseSync(process.env.DB_PATH || path.join(DATA_DIR, 'cafe.db'
 db.exec(`
 PRAGMA journal_mode = WAL;
 PRAGMA busy_timeout = 5000;
+-- 로그인: 카카오·네이버·구글(identities) 또는 이메일(identities provider='email' + users.pw_hash)
 CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY,
-  login TEXT UNIQUE NOT NULL,
-  pw_hash TEXT NOT NULL,
-  created_at TEXT NOT NULL,
-  fail_count INTEGER DEFAULT 0, locked_until TEXT,
+  name TEXT, email TEXT, email_ok INTEGER DEFAULT 0, avatar TEXT,
+  pw_hash TEXT,                       -- 이메일 로그인 비밀번호 (scrypt 한 방향 값)
+  created_at TEXT NOT NULL, last_login TEXT,
   euro_id TEXT, euro_pw_enc TEXT, euro_ok_at TEXT, euro_err TEXT, euro_err_at TEXT,
   store_name TEXT,
   discord_url TEXT,
@@ -26,6 +26,20 @@ CREATE TABLE IF NOT EXISTS users (
   ade_names TEXT,                     -- "복숭아,자몽,유자" (비면 1번·2번·3번)
   last_daily TEXT,                    -- 마지막으로 보고한 날짜 (YYYY-MM-DD)
   last_monthly TEXT                   -- 마지막으로 결산한 달 (YYYY-MM)
+);
+CREATE TABLE IF NOT EXISTS identities (
+  provider TEXT NOT NULL, uid TEXT NOT NULL, user_id INTEGER NOT NULL, email TEXT, created_at TEXT NOT NULL,
+  PRIMARY KEY (provider, uid)
+);
+CREATE TABLE IF NOT EXISTS oauth_states (
+  state TEXT PRIMARY KEY, provider TEXT NOT NULL, next TEXT, created_at TEXT NOT NULL
+);
+-- 이메일 가입: 확인 메일의 링크를 눌러야 계정이 생긴다
+CREATE TABLE IF NOT EXISTS signups (
+  token TEXT PRIMARY KEY, email TEXT NOT NULL, name TEXT, pw_hash TEXT NOT NULL, created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS pw_resets (
+  token TEXT PRIMARY KEY, user_id INTEGER NOT NULL, email TEXT NOT NULL, created_at TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS sessions (
   token TEXT PRIMARY KEY, user_id INTEGER NOT NULL, created_at TEXT NOT NULL, kakao_state TEXT

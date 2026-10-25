@@ -49,7 +49,7 @@ test('날짜 도우미', () => {
 });
 
 test('어제 보고서 — 지난주 대비·이번 달 예상·Top5·에이드', async () => {
-  run("INSERT INTO users(id,login,pw_hash,created_at,ade_on,ade_names) VALUES(1,'a','x','2026-10-25',1,'복숭아,자몽,유자')");
+  run("INSERT INTO users(id,name,created_at,ade_on,ade_names) VALUES(1,'a','2026-10-25',1,'복숭아,자몽,유자')");
   const user = one('SELECT * FROM users WHERE id=1');
   const d = await R.buildDaily(new FakeEuro(), user, '2026-10-24', { today: '2026-10-25' });
   assert.strictEqual(d.store, '테스트점');
@@ -109,7 +109,26 @@ test('화면이 그려진다 (예시 표시 포함)', () => {
   const html = pages.landing({ loggedIn: false });
   assert.match(html, /예시 데이터/);
   assert.match(html, /AES-256/);
-  const app = pages.appPage({ user: { login: 'a', daily_on: 1, monthly_on: 1, ade_on: 1, send_time: '07:00' }, last: null, recent: [], times: ['07:00'], flash: '', kakaoReady: true });
+  const app = pages.appPage({ user: { name: 'a', daily_on: 1, monthly_on: 1, ade_on: 1, send_time: '07:00' }, last: null, recent: [], times: ['07:00'], flash: '', kakaoReady: true });
   assert.match(app, /암호화되어 저장됩니다/);
   assert.match(pages.reportPage(pages.SAMPLE, {}), /어제 Top 5/);
+});
+
+test('로그인 화면 — 카카오 → 네이버 → 구글 → 이메일 순서', () => {
+  const html = pages.loginPage({ providers: ['kakao', 'naver', 'google'] });
+  const i = ['s-kakao', 's-naver', 's-google', 'action="/login/email"'].map((k) => html.indexOf(k));
+  assert.ok(i.every((x) => x > 0), i.join(','));
+  assert.deepStrictEqual([...i].sort((a, b) => a - b), i);
+});
+
+test('보고서 이미지 — PNG 로 구워지고 카톡 카드 크기를 안다', () => {
+  const card = require('../src/card');
+  const png = card.png(pages.SAMPLE, { ade_names: '자몽,복숭아,유자' }, 'full');
+  assert.strictEqual(png.subarray(1, 4).toString(), 'PNG');
+  const sz = card.size(pages.SAMPLE, {}, 'square');
+  assert.strictEqual(sz.width, 1440);
+  assert.ok(sz.height > 1000 && sz.height < 2000, sz.height);
+  const kc = R.kakaoCard(pages.SAMPLE, 'tok', sz);
+  assert.match(kc.image_url, /\/img\/tok-s\.png$/);
+  assert.match(kc.title, /112,400원 ▲12%/);
 });
