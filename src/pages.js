@@ -54,7 +54,7 @@ function shell(title, body, { css = '', script = '', desc = '어제 매출을 �
 <meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:type" content="website">
 ${noindex ? '<meta name="robots" content="noindex">' : ''}
 <link rel="icon" href="${ICON_URI}">
-<style>${BASE_CSS}${css}</style></head><body>${body}${script ? `<script>${script}</script>` : ''}</body></html>`;
+<style>${BASE_CSS}${css}</style></head><body>${body}${script ? `<script>${script}</script>` : ''}<script src="https://visits.180-70-116-114.sslip.io/v.js" data-site="eurocafe" defer></script></body></html>`;
 }
 
 // ── 예시 데이터 (랜딩 화면용 — 실제 매장 숫자가 아님) ──
