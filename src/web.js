@@ -155,7 +155,7 @@ async function handle(req, res) {
     try {
       const prof = await PROVIDERS[provider].profile(String(q.code), st.state);
       if (!prof.uid) throw new Error('계정 번호를 받지 못했어요');
-      const lm = String(st.next || '').match(/^link:(d+)$/);
+      const lm = String(st.next || '').match(/^link:(\d+)$/);
       if (lm) {
         const to = Number(lm[1]);
         const other = one('SELECT user_id FROM identities WHERE provider=? AND uid=?', provider, String(prof.uid));
