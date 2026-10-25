@@ -454,6 +454,17 @@ ${reportCard(d, user)}
   return shell(`${title} — ${d.store}`, body, { css: REPORT_CSS, noindex: true });
 }
 
+// 알림 시각 드롭다운 — 30분 단위, 맨 위 «선택 안 함» 은 아침 7시
+function timeLabel(t) { const h = Number(t.slice(0, 2)); return `${h < 12 ? '오전' : '오후'} ${(h % 12) || 12}:${t.slice(3)}`; }
+function timeOptions(cur) {
+  const sel = cur && cur !== '07:00' ? cur : '';
+  const list = [];
+  for (let h = 0; h < 24; h++) for (const m of ['00', '30']) list.push(`${String(h).padStart(2, '0')}:${m}`);
+  if (sel && !list.includes(sel)) list.push(sel);
+  return `<option value=""${sel ? '' : ' selected'}>선택 안 함 (오전 7:00 발송)</option>` +
+    list.map((t) => `<option value="${t}"${t === sel ? ' selected' : ''}>${timeLabel(t)}</option>`).join('');
+}
+
 // ── 내 화면 (/app) ──
 const APP_CSS = `
 .app{max-width:760px;margin:0 auto;padding:16px 16px 60px}
@@ -537,7 +548,7 @@ ${lastData ? `<div style="margin-bottom:16px">${reportCard(lastData, user)}<div 
  <h2>③ 받는 시각 · 내용</h2>
  <form method="post" action="/app/settings">
   <label>카카오톡 · 디스코드 알림 시각</label>
-  <input type="time" name="send_time" value="${esc(user.send_time && user.send_time !== '07:00' ? user.send_time : '')}" style="max-width:220px">
+  <select name="send_time" style="max-width:260px">${timeOptions(user.send_time)}</select>
   <div class="lock" style="background:rgba(255,179,92,.07);border-color:rgba(255,179,92,.3);color:var(--cream)"><span>⏰</span><span>전날 매출을 받고 싶은 시간을 입력하세요. 입력하지 않으시면 7시에 발송됩니다.</span></div>
   <p class="help" style="margin-top:8px">지금 설정: 매일 <b>${esc(user.send_time || '07:00')}</b> · 카톡과 디스코드 모두 이 시각에 보내요.</p>
   <label class="chk"><input type="checkbox" name="daily_on" value="1"${user.daily_on ? ' checked' : ''}> 매일 «어제 매출» 받기</label>
