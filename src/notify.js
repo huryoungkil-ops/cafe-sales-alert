@@ -99,7 +99,11 @@ async function toUser(user, msg) {
       try {
         const access = await kakaoAccess(user);
         r = await kakaoFeedWithAccess(access, msg.kakaoCard, msg.link);
-        if (!r.ok) r = await kakaoSendWithAccess(access, msg.kakao, msg.link);
+        if (!r.ok) {
+          const cardWhy = r.why;
+          r = await kakaoSendWithAccess(access, msg.kakao, msg.link);
+          if (r.ok) r = { ok: true, why: `이미지 카드 실패 → 글로 보냄 (${cardWhy})` };
+        }
       } catch (e) { r = { ok: false, why: e.message }; }
     } else r = await kakao(user, msg.kakao, msg.link);
     out.push(['카카오톡', r]);
