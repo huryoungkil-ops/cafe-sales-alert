@@ -1,7 +1,7 @@
 {
   "name": "cafe-sales-alert",
   "version": "1.0.0",
-  "description": "카페 매출 알리미 — 유로커피머신 관리자 매출을 매일 아침 카카오톡·디스코드로 보내 주는 사이트",
+  "description": "유로머신 매출 알리미 — 유로커피머신 관리자 매출을 매일 아침 카카오톡·디스코드로 보내 주는 사이트",
   "license": "MIT",
   "engines": {
     "node": ">=22.13"

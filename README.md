@@ -1,6 +1,6 @@
 <div align="center">
 
-# ☕ 카페 매출 알리미
+# ☕ 유로머신 매출 알리미
 
 **어제 매출, 눈 뜨면 카톡에 와 있어요.**
 
@@ -8,7 +8,7 @@
 **어제 매출 · 지난주 같은 요일 대비 · 이번 달 예상 · 메뉴 Top 5 · 에이드 펌프 사용량**을
 카카오톡(나에게 보내기)과 디스코드로 보내 주는 무료 사이트입니다.
 
-👉 **바로 쓰기: https://cafesales.mooo.com**
+👉 **바로 쓰기: https://eurocafe.mooo.com**
 
 ![Node.js](https://img.shields.io/badge/Node.js-22.13%2B-339933?logo=node.js&logoColor=white)
 ![의존성 1개](https://img.shields.io/badge/npm%20dependencies-1-brightgreen)

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Ubuntu 서버에 카페 매출 알리미를 설치한다. root 로 실행. 다시 돌려도 된다.
+# Ubuntu 서버에 유로머신 매출 알리미를 설치한다. root 로 실행. 다시 돌려도 된다.
 #   DOMAINS="cafe.example.com" bash deploy/setup.sh
 # 전제: Node.js 22.13 이상, Caddy(/etc/caddy/Caddyfile 에 «import sites/*» 가 있을 것), sqlite3
 set -euo pipefail
@@ -51,7 +51,7 @@ systemctl enable --now cafe-job.timer
 
 mkdir -p /etc/caddy/sites
 cat > /etc/caddy/sites/cafe.caddy <<CADDY
-# 카페 매출 알리미 → cafe-web(127.0.0.1:5740). deploy/setup.sh 가 만든다.
+# 유로머신 매출 알리미 → cafe-web(127.0.0.1:5740). deploy/setup.sh 가 만든다.
 $DOMAINS {
 	encode gzip
 	reverse_proxy 127.0.0.1:5740

@@ -199,7 +199,7 @@ function build(d, user = {}, variant = 'full') {
   }
   y += 34;
   parts.push(`<line x1="${PAD}" y1="${y}" x2="${W - PAD}" y2="${y}" stroke="${C.line}" stroke-width="1.5"/>`);
-  parts.push(T(PAD, y + 38, '카페 매출 알리미', 18, { w: 800, fill: C.cara }) + T(W - PAD, y + 38, 'cafesales.mooo.com', 18, { w: 500, fill: C.dim, anchor: 'end' }));
+  parts.push(T(PAD, y + 38, '유로머신 매출 알리미', 18, { w: 800, fill: C.cara }) + T(W - PAD, y + 38, new URL(require('./env').PUBLIC_BASE).host, 18, { w: 500, fill: C.dim, anchor: 'end' }));
   const H = Math.round(y + 38 + PAD - 4);
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
 <defs>

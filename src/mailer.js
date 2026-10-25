@@ -115,7 +115,7 @@ async function smtpSend(msg, from, to) {
 
 /** 메일 한 통. MAIL_DRY_RUN 이거나 SMTP 설정이 없으면 data/outbox/ 에 .eml·.html 로 남긴다 */
 async function sendMail({ to, subject, html, text, unsubscribeUrl }) {
-  const from = E.MAIL_FROM || '카페 매출 알리미 <no-reply@localhost>';
+  const from = E.MAIL_FROM || '유로머신 매출 알리미 <no-reply@localhost>';
   const msg = buildMessage({ from, to, subject, html, text, replyTo: E.MAIL_REPLY_TO, unsubscribeUrl });
   if (E.MAIL_DRY_RUN || !E.SMTP_HOST) {
     const dir = path.join(E.DATA_DIR, 'outbox');

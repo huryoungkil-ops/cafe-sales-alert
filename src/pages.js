@@ -4,7 +4,7 @@ const { REPO_URL } = require('./env');
 
 const esc = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const fmt = R.fmt;
-const NAME = '카페 매출 알리미';
+const NAME = '유로머신 매출 알리미';
 
 const BASE_CSS = `
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
@@ -574,7 +574,7 @@ footer{margin-top:26px;text-align:center;color:var(--dim);font-size:13px;line-he
 @media (max-width:520px){.prog3 a{font-size:12px;padding:10px}}
 `;
 
-function appPage({ user, last, recent, flash, flashErr, kakaoReady, logins = '' }) {
+function appPage({ user, last, recent, flash, flashErr, kakaoReady, logins = '', linkable = [] }) {
   const hasEuro = !!user.euro_pw_enc;
   const hasNoti = !!(user.discord_url || user.kakao_refresh);
   const step = !hasEuro ? 1 : !hasNoti ? 2 : 3;
@@ -641,6 +641,7 @@ ${lastData ? `<div style="margin-bottom:16px">${reportCard(lastData, user)}<div 
 <div class="card" id="account">
  <h2>계정</h2>
  <p class="d">로그인: <b>${esc(logins || '—')}</b>${user.email ? ` · ${esc(user.email)}` : ''}</p>
+ ${linkable.length ? `<p class="help" style="margin-top:12px">다른 계정으로도 로그인하려면 연결해 두세요.</p><div class="row">${linkable.map((p) => `<a class="btn btn-ghost btn-sm" href="/auth/${p}?link=1">${({ kakao: '카카오', naver: '네이버', google: '구글' })[p]} 연결</a>`).join('')}</div>` : ''}
  <p class="help">이메일 로그인 비밀번호를 정하거나 바꾸려면 <a href="/forgot">비밀번호 찾기</a>로 링크를 받아 주세요.</p>
  <details class="help" style="margin-top:18px"><summary>탈퇴하기</summary>
   <form method="post" action="/app/leave" onsubmit="return confirm('정말 탈퇴할까요? 계정·유로 비밀번호·매출 기록이 모두 즉시 지워집니다.')">

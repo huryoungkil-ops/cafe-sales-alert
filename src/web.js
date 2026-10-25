@@ -77,7 +77,7 @@ function findOrCreate(provider, pf) {
     userId = Number(run('INSERT INTO users(name,email,email_ok,avatar,created_at,last_login) VALUES(?,?,?,?,?,?)',
       String(pf.name || '').slice(0, 40), pf.email || null, pf.email && pf.emailVerified ? 1 : 0, pf.avatar || '', now(), now()).lastInsertRowid);
     isNew = true;
-    notify.owner(`🙋 카페 매출 알리미 새 가입 #${userId} — ${provider} (전체 ${n + 1}명)`);
+    notify.owner(`🙋 유로머신 매출 알리미 새 가입 #${userId} — ${provider} (전체 ${n + 1}명)`);
   }
   run('INSERT INTO identities(provider,uid,user_id,email,created_at) VALUES(?,?,?,?,?)', provider, String(pf.uid), userId, pf.email || null, now());
   return { userId, isNew };
@@ -139,7 +139,9 @@ async function handle(req, res) {
     if (!prov || !prov.on()) return loginMsg(res, '이 로그인은 아직 준비 중이에요.');
     const state = token(18);
     run('DELETE FROM oauth_states WHERE created_at < ?', kstAgo(3600e3));
-    run('INSERT INTO oauth_states(state,provider,next,created_at) VALUES(?,?,?,?)', state, am[1], '/app', now());
+    // ?link=1 — 로그인한 채로 누르면 지금 계정에 이 로그인을 붙인다 (내 화면 «계정 연결»)
+    const next = url.searchParams.get('link') && user ? `link:${user.id}` : '/app';
+    run('INSERT INTO oauth_states(state,provider,next,created_at) VALUES(?,?,?,?)', state, am[1], next, now());
     return redirect(res, prov.url(state));
   }
   am = p.match(/^\/auth\/(\w+)\/callback$/);
@@ -153,6 +155,16 @@ async function handle(req, res) {
     try {
       const prof = await PROVIDERS[provider].profile(String(q.code), st.state);
       if (!prof.uid) throw new Error('계정 번호를 받지 못했어요');
+      const lm = String(st.next || '').match(/^link:(d+)$/);
+      if (lm) {
+        const to = Number(lm[1]);
+        const other = one('SELECT user_id FROM identities WHERE provider=? AND uid=?', provider, String(prof.uid));
+        if (other && other.user_id !== to) return redirect(res, `/app?e=${encodeURIComponent('그 계정은 이미 다른 회원 계정에 연결돼 있어요.')}#account`);
+        if (!other) run('INSERT INTO identities(provider,uid,user_id,email,created_at) VALUES(?,?,?,?,?)', provider, String(prof.uid), to, prof.email || null, now());
+        if (prof.kakaoRefresh) run('UPDATE users SET kakao_refresh=?, kakao_at=? WHERE id=?', prof.kakaoRefresh, now(), to);
+        const label = { kakao: '카카오', naver: '네이버', google: '구글' }[provider];
+        return redirect(res, `/app?m=${encodeURIComponent(`${label} 로그인을 이 계정에 연결했어요.${prof.kakaoRefresh ? ' 카카오톡 알림도 연결됐어요.' : ''}`)}#account`);
+      }
       const { userId, isNew } = findOrCreate(provider, prof);
       // 카카오로 로그인하며 «카카오톡 메시지 전송» 에 동의했다면 카톡 알림도 바로 연결
       let talk = false;
@@ -228,7 +240,7 @@ async function handle(req, res) {
     if (A.existingFor(s.email)) return loginMsg(res, '이미 가입된 주소예요. 로그인해 주세요.');
     const userId = Number(run('INSERT INTO users(email,email_ok,name,pw_hash,created_at,last_login) VALUES(?,1,?,?,?,?)', s.email, s.email.split('@')[0], s.pw_hash, now(), now()).lastInsertRowid);
     run("INSERT INTO identities(provider,uid,user_id,email,created_at) VALUES('email',?,?,?,?)", s.email, userId, s.email, now());
-    notify.owner(`🙋 카페 매출 알리미 새 가입 #${userId} — 이메일 (전체 ${one('SELECT COUNT(*) n FROM users').n}명)`);
+    notify.owner(`🙋 유로머신 매출 알리미 새 가입 #${userId} — 이메일 (전체 ${one('SELECT COUNT(*) n FROM users').n}명)`);
     return loginUser(res, userId, `/app?m=${encodeURIComponent('가입을 마쳤어요! 유로 관리자 계정부터 연결해 주세요.')}`);
   }
   if (M === 'GET' && (sm = p.match(/^\/reset\/([\w-]+)$/))) {
@@ -253,7 +265,7 @@ async function handle(req, res) {
     const t = await notify.kakaoToken({ grant_type: 'authorization_code', redirect_uri: notify.kakaoRedirect(), code });
     if (!t.access_token) return send(res, 400, pages.messagePage('연결 실패', `카카오가 알려준 이유: ${pages.esc(JSON.stringify(t).slice(0, 300))}`, '/app'));
     run('UPDATE users SET kakao_refresh=?, kakao_at=? WHERE id=?', t.refresh_token, now(), s.user_id);
-    const sent = await notify.kakaoSendWithAccess(t.access_token, '☕ 카페 매출 알리미 연결 완료\n매일 정한 시각에 어제 매출을 여기 «나와의 채팅»으로 보내 드려요.');
+    const sent = await notify.kakaoSendWithAccess(t.access_token, '☕ 유로머신 매출 알리미 연결 완료\n매일 정한 시각에 어제 매출을 여기 «나와의 채팅»으로 보내 드려요.');
     return back(res, sent.ok ? '카카오톡 연결 완료 — «나와의 채팅»에 시험 메시지를 보냈습니다.' : `카카오톡은 연결됐지만 시험 메시지 실패: ${sent.why}`, !sent.ok, '#notify');
   }
 
@@ -267,6 +279,7 @@ async function handle(req, res) {
       user, last: last ? { ...last, data: JSON.parse(last.data_json) } : null, recent,
       flash: url.searchParams.get('m') || url.searchParams.get('e') || '', flashErr: url.searchParams.has('e'), kakaoReady: !!KAKAO_REST_KEY,
       logins: all('SELECT provider FROM identities WHERE user_id=?', user.id).map((x) => ({ kakao: '카카오', naver: '네이버', google: 'Google', email: '이메일' })[x.provider] || x.provider).join(' · '),
+      linkable: ['kakao', 'naver', 'google'].filter((p) => PROVIDERS[p].on() && !all('SELECT provider FROM identities WHERE user_id=?', user.id).some((x) => x.provider === p)),
     }));
   }
 
@@ -298,7 +311,7 @@ async function handle(req, res) {
       const rep = await makeReport(fresh, 'daily', y, { send: false, euro });
       run('UPDATE users SET last_daily=? WHERE id=? AND (last_daily IS NULL OR last_daily<?)', y, user.id, y);
       const first = !user.euro_pw_enc;
-      if (first) notify.owner(`☕ 카페 매출 알리미 — ${who(user)} 님이 매장을 연결했습니다`);
+      if (first) notify.owner(`☕ 유로머신 매출 알리미 — ${who(user)} 님이 매장을 연결했습니다`);
       return back(res, `연결 완료! «${rep.data.store}» 어제 매출 ${R.fmt(rep.data.day.money)}원을 불러왔어요. 이제 받을 곳(카톡·디스코드)을 연결해 주세요.`, false, '#notify');
     } catch (e) {
       return back(res, `계정은 암호화해 저장했지만 매출을 불러오지 못했습니다: ${e.message}`, true, '#euro');
@@ -325,7 +338,7 @@ async function handle(req, res) {
     const u = String(b.get('discord') || '').trim();
     if (!u) { run('UPDATE users SET discord_url=NULL WHERE id=?', user.id); return back(res, '디스코드 알림을 껐습니다.', false, '#notify'); }
     if (!notify.DISCORD_RE.test(u)) return back(res, '디스코드 웹훅 주소 형식이 아닙니다 (https://discord.com/api/webhooks/… ).', true, '#notify');
-    const t = await notify.discord(u, `☕ 카페 매출 알리미 — ${who(user)} 님 알림 연결 완료! 매일 정한 시각에 어제 매출을 여기로 보내 드려요.`);
+    const t = await notify.discord(u, `☕ 유로머신 매출 알리미 — ${who(user)} 님 알림 연결 완료! 매일 정한 시각에 어제 매출을 여기로 보내 드려요.`);
     if (!t.ok) return back(res, `시험 알림 실패(저장 안 함): ${t.why}`, true, '#notify');
     run('UPDATE users SET discord_url=? WHERE id=?', u, user.id);
     return back(res, '디스코드 웹훅을 저장했고 시험 알림을 보냈습니다.', false, '#notify');
@@ -353,7 +366,7 @@ async function handle(req, res) {
     if (String(b.get('confirm') || '').trim() !== '탈퇴') return back(res, '«탈퇴» 라고 적어야 탈퇴할 수 있어요.', true, '#account');
     for (const t of ['reports', 'days', 'sessions', 'logs', 'identities', 'pw_resets']) run(`DELETE FROM ${t} WHERE user_id=?`, user.id);
     run('DELETE FROM users WHERE id=?', user.id);
-    notify.owner(`👋 카페 매출 알리미 탈퇴 — 회원 #${user.id}`);
+    notify.owner(`👋 유로머신 매출 알리미 탈퇴 — 회원 #${user.id}`);
     return redirect(res, '/?bye=1', { 'Set-Cookie': `${COOKIE}=; Path=/; Max-Age=0` });
   }
 
@@ -366,5 +379,5 @@ const server = http.createServer((req, res) => {
     if (!res.headersSent) send(res, 500, pages.messagePage('오류', `잠시 뒤 다시 시도해 주세요. (${pages.esc(e.message)})`));
   });
 });
-if (require.main === module) server.listen(PORT, HOST, () => console.log(`카페 매출 알리미 http://${HOST}:${PORT}`));
+if (require.main === module) server.listen(PORT, HOST, () => console.log(`유로머신 매출 알리미 http://${HOST}:${PORT}`));
 module.exports = { server };

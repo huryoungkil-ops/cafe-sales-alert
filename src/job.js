@@ -84,8 +84,8 @@ async function runUser(user) {
     console.error(user.id, e.message);
     if (first) {
       const why = auth ? `유로 관리자 로그인이 안 됩니다 (${e.message}). 비밀번호를 바꾸셨다면 사이트에서 다시 저장해 주세요. 그때까지 조회를 멈춥니다.` : `오늘 매출을 가져오지 못했습니다 (${e.message}). ${RETRY_MIN}분 뒤 다시 시도합니다.`;
-      await notify.toUser(user, { discord: `⚠️ 카페 매출 알리미 — ${why}`, kakao: `⚠️ 카페 매출 알리미\n${why}`.slice(0, 195), link: require('./env').PUBLIC_BASE + '/app' });
-      if (!auth) await notify.owner(`⚠️ 카페 매출 알리미 조회 실패 — 회원 #${user.id}: ${e.message}`);
+      await notify.toUser(user, { discord: `⚠️ 유로머신 매출 알리미 — ${why}`, kakao: `⚠️ 유로머신 매출 알리미\n${why}`.slice(0, 195), link: require('./env').PUBLIC_BASE + '/app' });
+      if (!auth) await notify.owner(`⚠️ 유로머신 매출 알리미 조회 실패 — 회원 #${user.id}: ${e.message}`);
     }
   }
 }
