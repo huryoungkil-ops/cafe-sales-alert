@@ -583,7 +583,7 @@ function appPage({ user, last, recent, flash, flashErr, kakaoReady, logins = '' 
   const lastData = last ? { ...last.data, recent: last.data.recent || recent } : null;
   const body = `<div class="app">
 <div class="top-nav"><a class="logo" href="/"><img src="${ICON_URI}" width="28" height="28" alt="">${NAME}</a>
-<div class="who">${esc(user.name || (user.email || '').split('@')[0] || '사장님')} 님 <form method="post" action="/logout" style="margin:0"><button class="btn btn-ghost btn-sm">로그아웃</button></form></div></div>
+<div class="who">${user.name || user.email ? esc(user.name || user.email.split('@')[0]) + ' 님' : '사장님'} <form method="post" action="/logout" style="margin:0"><button class="btn btn-ghost btn-sm">로그아웃</button></form></div></div>
 ${flash ? `<div class="flash${flashErr ? ' err' : ''}">${esc(flash)}</div>` : ''}
 <div class="prog3">
  <a href="#euro" class="${hasEuro ? 'done' : 'now'}"><b>${hasEuro ? '✅' : '①'} 유로 계정</b>${hasEuro ? '연결됨' : '연결하기'}</a>
@@ -609,7 +609,7 @@ ${lastData ? `<div style="margin-bottom:16px">${reportCard(lastData, user)}<div 
 
 <div class="card" id="notify">
  <h2>② 받을 곳</h2>
- <p class="d">둘 다 연결하면 둘 다로 보내요. 카톡엔 핵심만 짧게(버튼을 누르면 자세한 보고서), 디스코드엔 전체 보고서가 와요.</p>
+ <p class="d">둘 다 연결하면 둘 다로 보내요. 카톡엔 매출 카드 이미지(버튼을 누르면 자세한 보고서), 디스코드엔 전체 보고서 이미지가 와요.</p>
  <div class="state"><span>💬 카카오톡 «나와의 채팅»</span>${user.kakao_refresh ? `<span class="ok">연결됨</span>` : ''}</div>
  <div class="row">${user.kakao_refresh
     ? `<form method="post" action="/app/kakao/unlink" style="margin:0"><button class="btn btn-ghost btn-sm">카카오톡 연결 끊기</button></form>`
